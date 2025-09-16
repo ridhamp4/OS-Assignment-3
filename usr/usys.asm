@@ -278,3 +278,47 @@ Disassembly of section .text:
  378:	ef000000 	svc	0x00000000
  37c:	e49d4004 	pop	{r4}		@ (ldr r4, [sp], #4)
  380:	e12fff1e 	bx	lr
+
+00000384 <printpt>:
+ 384:	e52d4004 	push	{r4}		@ (str r4, [sp, #-4]!)
+ 388:	e1a04003 	mov	r4, r3
+ 38c:	e1a03002 	mov	r3, r2
+ 390:	e1a02001 	mov	r2, r1
+ 394:	e1a01000 	mov	r1, r0
+ 398:	e3a0001a 	mov	r0, #26
+ 39c:	ef000000 	svc	0x00000000
+ 3a0:	e49d4004 	pop	{r4}		@ (ldr r4, [sp], #4)
+ 3a4:	e12fff1e 	bx	lr
+
+000003a8 <pgpte>:
+ 3a8:	e52d4004 	push	{r4}		@ (str r4, [sp, #-4]!)
+ 3ac:	e1a04003 	mov	r4, r3
+ 3b0:	e1a03002 	mov	r3, r2
+ 3b4:	e1a02001 	mov	r2, r1
+ 3b8:	e1a01000 	mov	r1, r0
+ 3bc:	e3a0001b 	mov	r0, #27
+ 3c0:	ef000000 	svc	0x00000000
+ 3c4:	e49d4004 	pop	{r4}		@ (ldr r4, [sp], #4)
+ 3c8:	e12fff1e 	bx	lr
+
+000003cc <ugetpid>:
+ 3cc:	e52d4004 	push	{r4}		@ (str r4, [sp, #-4]!)
+ 3d0:	e1a04003 	mov	r4, r3
+ 3d4:	e1a03002 	mov	r3, r2
+ 3d8:	e1a02001 	mov	r2, r1
+ 3dc:	e1a01000 	mov	r1, r0
+ 3e0:	e3a0001c 	mov	r0, #28
+ 3e4:	ef000000 	svc	0x00000000
+ 3e8:	e49d4004 	pop	{r4}		@ (ldr r4, [sp], #4)
+ 3ec:	e12fff1e 	bx	lr
+
+000003f0 <kpt>:
+ 3f0:	e52d4004 	push	{r4}		@ (str r4, [sp, #-4]!)
+ 3f4:	e1a04003 	mov	r4, r3
+ 3f8:	e1a03002 	mov	r3, r2
+ 3fc:	e1a02001 	mov	r2, r1
+ 400:	e1a01000 	mov	r1, r0
+ 404:	e3a0001d 	mov	r0, #29
+ 408:	ef000000 	svc	0x00000000
+ 40c:	e49d4004 	pop	{r4}		@ (ldr r4, [sp], #4)
+ 410:	e12fff1e 	bx	lr

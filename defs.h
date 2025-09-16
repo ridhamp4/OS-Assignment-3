@@ -207,6 +207,13 @@ void*           kpt_alloc(void);
 void            init_vmm (void);
 void            kpt_freerange (uint32 low, uint32 hi);
 void            paging_init (uint phy_low, uint phy_hi);
+// vm.c
+// vm.c
+void            kpt(void);
+void            print_proc_page_table(struct proc *p);
+
+// vm.c
+pte_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
 
 int sys_settickets(void);
 int sys_srand(void);

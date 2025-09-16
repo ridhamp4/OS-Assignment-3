@@ -28,7 +28,7 @@ UPROGS=\
 	_mysleep\
 	_lotterytest\
 	_sleepcheck\
-
+	_ppttest\
 
 all: $(FS_IMAGE)
 

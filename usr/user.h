@@ -37,6 +37,10 @@ int settickets(int pid, int n);
 void srand(uint seed);
 int getpinfo(struct pstat *);
 
+int printpt(void);
+int pgpte(void *va);
+int ugetpid(void);
+int kpt(void);
 
 // ulib.c
 int stat(char*, struct stat*);

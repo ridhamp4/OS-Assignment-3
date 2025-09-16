@@ -86,7 +86,7 @@ void* kpt_alloc (void)
 
 // Return the address of the PTE in page directory that corresponds to
 // virtual address va.  If alloc!=0, create any required page table pages.
-static pte_t* walkpgdir (pde_t *pgdir, const void *va, int alloc)
+pte_t* walkpgdir (pde_t *pgdir, const void *va, int alloc)
 {
     pde_t *pde;
     pte_t *pgtab;
@@ -444,4 +444,80 @@ void paging_init (uint phy_low, uint phy_hi)
 {
     mappages (P2V(&_kernel_pgtbl), P2V(phy_low), phy_hi - phy_low, phy_low, AP_KU);
     flush_tlb ();
+}
+
+// --- add to vm.c ---
+void
+kpt(void)
+{
+    extern pde_t *kpgdir;   // your kernel page directory
+    int i;
+
+    cprintf("=== kernel page table dump ===\n");
+    for (i = 0; i < NUM_UPDE; i++) {
+        uint entry = (uint)kpgdir[i];
+        if (entry & PE_TYPES) {
+            cprintf("pgdir[%d] = 0x%x pa=0x%x\n", i, entry, PT_ADDR(entry));
+        }
+    }
+    cprintf("=== end dump ===\n");
+}
+// --- add to vm.c ---
+
+// Print first 10 and last 10 PTEs of process p
+void
+print_proc_page_table(struct proc *p)
+{
+    uint i;
+    uint num_pages;
+    pte_t *pte;
+    uint va;
+
+    if (p == 0) {
+        cprintf("print_proc_page_table: no proc\n");
+        return;
+    }
+
+    cprintf("=== page table for pid %d (%s) ===\n", p->pid, p->name);
+
+
+    /* Number of user pages in entire user address space */
+    num_pages = UADDR_SZ / PTE_SZ;
+
+    /* first 10 pages */
+    for (i = 0; i < 10; i++) {
+        va = i * PTE_SZ;
+        pte = walkpgdir(p->pgdir, (const void *)va, 0);
+        if (pte == 0 || ((*pte & PE_TYPES) == 0)) {
+            cprintf("va 0x%08x: not present\n", va);
+        } else {
+            cprintf("va 0x%08x  pte 0x%08x  pa 0x%08x  ap 0x%02x\n",
+                    va,
+                    (uint)(*pte),
+                    PTE_ADDR(*pte),
+                    PTE_AP(*pte));
+        }
+    }
+
+    /* last 10 pages */
+    if (num_pages < 10) {
+        cprintf("user address space smaller than 10 pages\n");
+    } else {
+        uint start = num_pages - 10;
+        for (i = 0; i < 10; i++) {
+            va = (start + i) * PTE_SZ;
+            pte = walkpgdir(p->pgdir, (const void *)va, 0);
+            if (pte == 0 || ((*pte & PE_TYPES) == 0)) {
+                cprintf("va 0x%08x: not present\n", va);
+            } else {
+                cprintf("va 0x%08x  pte 0x%08x  pa 0x%08x  ap 0x%02x\n",
+                        va,
+                        (uint)(*pte),
+                        PTE_ADDR(*pte),
+                        PTE_AP(*pte));
+            }
+        }
+    }
+
+    cprintf("=== end page table for pid %d ===\n", p->pid);
 }

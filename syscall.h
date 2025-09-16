@@ -24,3 +24,7 @@
 #define SYS_settickets  23
 #define SYS_srand       24
 #define SYS_getpinfo    25
+#define SYS_printpt  26
+#define SYS_pgpte     27
+#define SYS_ugetpid   28
+#define SYS_kpt       29

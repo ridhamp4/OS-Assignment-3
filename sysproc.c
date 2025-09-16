@@ -172,3 +172,50 @@ sys_getpinfo(void)
   return 0;
 }
 
+extern void print_proc_page_table(struct proc *p);
+int
+sys_printpt(void)
+{
+  if (proc == 0)   // global proc pointer
+    return -1;
+
+  print_proc_page_table(proc);
+  return 0;
+}
+
+int
+sys_ugetpid(void)
+{
+    if (proc == 0)
+        return -1;
+    return proc->pid;
+}
+// ensure walkpgdir is visible (declared in vm.c)
+// pte_t* walkpgdir(pde_t *pgdir, const void *va, int alloc);
+
+int
+sys_pgpte(void)
+{
+    void *uva;         // user virtual address argument
+    pte_t *pte;
+
+    // get user pointer argument 0
+    if (argptr(0, (char**)&uva, sizeof(void*)) < 0)
+        return -1;
+
+    if (proc == 0)
+        return -1;
+
+    pte = walkpgdir(proc->pgdir, uva, 0);
+    if (pte == 0)
+        return 0;   // not present
+
+    return (int)(*pte);
+}
+int
+sys_kpt(void)
+{
+    kpt();
+    return 0;
+}
+

@@ -170,9 +170,12 @@ int growproc(int n)
     sz = proc->sz;
 
     if(n > 0){
-        if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0) {
+        // On-demand paging: do not allocate physical pages here.
+        // Just increase the process size, mappings will be created on page fault.
+        if (sz + n >= UADDR_SZ) {
             return -1;
         }
+        sz = sz + n;
 
     } else if(n < 0){
         if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0) {

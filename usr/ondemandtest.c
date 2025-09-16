@@ -8,16 +8,26 @@ int main(void)
 {
     char *p;
     int i;
+    int PAGE_SIZE = 4096;
+    int NUM_PAGES = 10;
 
     printf(1, "On-demand paging test starting\n");
 
-    for (i = 0; i < SIZE; i += 4096) {
-        p = (char*)i;
-        *p = i % 256; // write triggers on-demand page allocation
-        if (*p != i % 256)
-            printf(1, "memory test failed at 0x%x\n", i);
+    // Grow heap lazily via sbrk but don't touch pages yet
+    p = sbrk(NUM_PAGES * PAGE_SIZE);
+    p = p; // starting address returned by sbrk
+    for (i = 0; i < NUM_PAGES * PAGE_SIZE; i += PAGE_SIZE)
+    {
+        p[i] = i % 256; // Touch 1 byte per page, should fault then allocate
     }
-
-    printf(1, "On-demand paging test succeeded\n");
+    for (i = 0; i < NUM_PAGES * PAGE_SIZE; i += PAGE_SIZE)
+    {
+        if (p[i] != (i % 256))
+        {
+            printf(1, "ondemandtest: memory error at %d\n", i);
+            exit();
+        }
+    }
+    printf(1, "ondemandtest: success\n");
     exit();
 }

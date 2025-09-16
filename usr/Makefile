@@ -29,6 +29,7 @@ UPROGS=\
 	_lotterytest\
 	_sleepcheck\
 	_ppttest\
+	_ondemandtest\
 
 all: $(FS_IMAGE)
 

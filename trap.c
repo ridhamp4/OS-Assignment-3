@@ -6,91 +6,106 @@
 #include "proc.h"
 
 // trap routine
-void swi_handler (struct trapframe *r)
+void swi_handler(struct trapframe *r)
 {
     proc->tf = r;
-    syscall ();
+    syscall();
 }
 
 // trap routine
 // trap.c : irq_handler
 void irq_handler(struct trapframe *r)
 {
-  // no ptable.lock here
-  if (proc) proc->tf = r;
+    // no ptable.lock here
+    if (proc)
+        proc->tf = r;
 
-  acquire(&tickslock);
-  ticks++;
-  wakeup(&ticks);     // will acquire ptable.lock inside
-  release(&tickslock);
+    acquire(&tickslock);
+    ticks++;
+    wakeup(&ticks); // will acquire ptable.lock inside
+    release(&tickslock);
 
-  pic_dispatch(r);
+    pic_dispatch(r);
 }
 
-
 // trap routine
-void reset_handler (struct trapframe *r)
+void reset_handler(struct trapframe *r)
 {
     cli();
-    cprintf ("reset at: 0x%x \n", r->pc);
+    cprintf("reset at: 0x%x \n", r->pc);
 }
 
 // trap routine
-void und_handler (struct trapframe *r)
+void und_handler(struct trapframe *r)
 {
     cli();
-    cprintf ("und at: 0x%x \n", r->pc);
+    cprintf("und at: 0x%x \n", r->pc);
 }
 
 // trap routine
-void dabort_handler (struct trapframe *r)
+void dabort_handler(struct trapframe *r)
 {
     uint dfs, fa;
 
     cli();
 
     // read data fault status register
-    asm("MRC p15, 0, %[r], c5, c0, 0": [r]"=r" (dfs)::);
+    asm("MRC p15, 0, %[r], c5, c0, 0" : [r] "=r"(dfs)::);
 
     // read the fault address register
-    asm("MRC p15, 0, %[r], c6, c0, 0": [r]"=r" (fa)::);
-    
-    cprintf ("data abort: instruction 0x%x, fault addr 0x%x, reason 0x%x \n",
-             r->pc, fa, dfs);
-    
-    dump_trapframe (r);
+    asm("MRC p15, 0, %[r], c6, c0, 0" : [r] "=r"(fa)::);
+
+    if (proc)
+    {
+        // Try to allocate a page at the faulting address
+        extern int handle_page_fault(uint fault_addr);
+        if (handle_page_fault(fa) == 0)
+        {
+            cprintf("On-demand paging: allocated page for 0x%x\n", fa);
+            sti();
+            return;
+        }
+        else
+        {
+            cprintf("On-demand paging: failed to allocate page for 0x%x\n", fa);
+        }
+    }
+
+    cprintf("data abort: instruction 0x%x, fault addr 0x%x, reason 0x%x \n",
+            r->pc, fa, dfs);
+    dump_trapframe(r);
 }
 
 // trap routine
-void iabort_handler (struct trapframe *r)
+void iabort_handler(struct trapframe *r)
 {
     uint ifs;
-    
+
     // read fault status register
-    asm("MRC p15, 0, %[r], c5, c0, 0": [r]"=r" (ifs)::);
+    asm("MRC p15, 0, %[r], c5, c0, 0" : [r] "=r"(ifs)::);
 
     cli();
-    cprintf ("prefetch abort at: 0x%x (reason: 0x%x)\n", r->pc, ifs);
-    dump_trapframe (r);
+    cprintf("prefetch abort at: 0x%x (reason: 0x%x)\n", r->pc, ifs);
+    dump_trapframe(r);
 }
 
 // trap routine
-void na_handler (struct trapframe *r)
+void na_handler(struct trapframe *r)
 {
     cli();
-    cprintf ("n/a at: 0x%x \n", r->pc);
+    cprintf("n/a at: 0x%x \n", r->pc);
 }
 
 // trap routine
-void fiq_handler (struct trapframe *r)
+void fiq_handler(struct trapframe *r)
 {
     cli();
-    cprintf ("fiq at: 0x%x \n", r->pc);
+    cprintf("fiq at: 0x%x \n", r->pc);
 }
 
 // low-level init code: in real hardware, lower memory is usually mapped
 // to flash during startup, we need to remap it to SDRAM
-void trap_init ( )
+void trap_init()
 {
     volatile uint32 *ram_start;
     char *stk;
@@ -101,7 +116,7 @@ void trap_init ( )
     static uint32 const LDR_PCPC = 0xE59FF000U;
 
     // create the excpetion vectors
-    ram_start = (uint32*)VEC_TBL;
+    ram_start = (uint32 *)VEC_TBL;
 
     ram_start[0] = LDR_PCPC | 0x18; // Reset (SVC)
     ram_start[1] = LDR_PCPC | 0x18; // Undefine Instruction (UND)
@@ -112,8 +127,8 @@ void trap_init ( )
     ram_start[6] = LDR_PCPC | 0x18; // IRQ (IRQ)
     ram_start[7] = LDR_PCPC | 0x18; // FIQ (FIQ)
 
-    ram_start[8]  = (uint32)trap_reset;
-    ram_start[9]  = (uint32)trap_und;
+    ram_start[8] = (uint32)trap_reset;
+    ram_start[9] = (uint32)trap_und;
     ram_start[10] = (uint32)trap_swi;
     ram_start[11] = (uint32)trap_iabort;
     ram_start[12] = (uint32)trap_dabort;
@@ -122,33 +137,35 @@ void trap_init ( )
     ram_start[15] = (uint32)trap_fiq;
 
     // initialize the stacks for different mode
-    for (i = 0; i < sizeof(modes)/sizeof(uint); i++) {
-        stk = alloc_page ();
+    for (i = 0; i < sizeof(modes) / sizeof(uint); i++)
+    {
+        stk = alloc_page();
 
-        if (stk == NULL) {
+        if (stk == NULL)
+        {
             panic("failed to alloc memory for irq stack");
         }
 
-        set_stk (modes[i], (uint)stk);
+        set_stk(modes[i], (uint)stk);
     }
 }
 
-void dump_trapframe (struct trapframe *tf)
+void dump_trapframe(struct trapframe *tf)
 {
-    cprintf ("r14_svc: 0x%x\n", tf->r14_svc);
-    cprintf ("   spsr: 0x%x\n", tf->spsr);
-    cprintf ("     r0: 0x%x\n", tf->r0);
-    cprintf ("     r1: 0x%x\n", tf->r1);
-    cprintf ("     r2: 0x%x\n", tf->r2);
-    cprintf ("     r3: 0x%x\n", tf->r3);
-    cprintf ("     r4: 0x%x\n", tf->r4);
-    cprintf ("     r5: 0x%x\n", tf->r5);
-    cprintf ("     r6: 0x%x\n", tf->r6);
-    cprintf ("     r7: 0x%x\n", tf->r7);
-    cprintf ("     r8: 0x%x\n", tf->r8);
-    cprintf ("     r9: 0x%x\n", tf->r9);
-    cprintf ("    r10: 0x%x\n", tf->r10);
-    cprintf ("    r11: 0x%x\n", tf->r11);
-    cprintf ("    r12: 0x%x\n", tf->r12);
-    cprintf ("     pc: 0x%x\n", tf->pc);
+    cprintf("r14_svc: 0x%x\n", tf->r14_svc);
+    cprintf("   spsr: 0x%x\n", tf->spsr);
+    cprintf("     r0: 0x%x\n", tf->r0);
+    cprintf("     r1: 0x%x\n", tf->r1);
+    cprintf("     r2: 0x%x\n", tf->r2);
+    cprintf("     r3: 0x%x\n", tf->r3);
+    cprintf("     r4: 0x%x\n", tf->r4);
+    cprintf("     r5: 0x%x\n", tf->r5);
+    cprintf("     r6: 0x%x\n", tf->r6);
+    cprintf("     r7: 0x%x\n", tf->r7);
+    cprintf("     r8: 0x%x\n", tf->r8);
+    cprintf("     r9: 0x%x\n", tf->r9);
+    cprintf("    r10: 0x%x\n", tf->r10);
+    cprintf("    r11: 0x%x\n", tf->r11);
+    cprintf("    r12: 0x%x\n", tf->r12);
+    cprintf("     pc: 0x%x\n", tf->pc);
 }
